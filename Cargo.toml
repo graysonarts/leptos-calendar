@@ -1,0 +1,10 @@
+[package]
+name = "leptos_calendar"
+version = "0.1.0"
+edition = "2021"
+description = "A calendar component for leptos apps"
+
+[dependencies]
+chrono = { version = "0.4.38", features = ["serde"] }
+itertools = "0.13.0"
+leptos = { version = "0.6.15", features = ["csr"] }

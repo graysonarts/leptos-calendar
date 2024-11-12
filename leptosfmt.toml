@@ -1,0 +1,8 @@
+max_width = 100
+tab_spaces = 2
+indentation_style = "Spaces"
+newline_style = "Unix"
+closing_tag_style = "SelfClosing"
+
+[attr_values]
+class = "Tailwind" # "Tailwind" is the only attribute value formatter available for now
