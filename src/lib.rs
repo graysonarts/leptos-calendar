@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cell::Cell, collections::HashMap};
 
 use chrono::{prelude::*, Duration};
 use itertools::Itertools as _;
@@ -6,16 +6,34 @@ use leptos::*;
 
 #[derive(Clone, Debug, Default)]
 pub struct CalendarConfig {
+    pub header_classes: Option<String>,
     pub cell_classes: Option<String>,
     pub month_classes: Option<String>,
+    pub active_classes: Option<String>,
+    pub cell_renderer: Option<fn(NaiveDate) -> String>,
+}
+
+#[derive(Clone, Debug, Default)]
+struct CalendarState {
+    active_date: MaybeSignal<DateTime<Local>>,
 }
 
 #[component]
 pub fn CalendarRoot(
     #[prop(into, optional)] config: MaybeSignal<CalendarConfig>,
-    #[prop(into)] date: MaybeSignal<DateTime<Local>>,
+    children: Children,
 ) -> impl IntoView {
     provide_context(config);
+    view! { {children()} }
+}
+
+/// A calendar component that displays a month view.
+#[component]
+pub fn Calendar(
+    #[prop(into)] date: MaybeSignal<DateTime<Local>>,
+    #[prop(into, optional)] class: MaybeProp<String>,
+) -> impl IntoView {
+    provide_context(CalendarState { active_date: date });
     let dates = move || {
         let date = date.get();
         let first_day = date.with_day(1).unwrap().date_naive();
@@ -32,16 +50,16 @@ pub fn CalendarRoot(
     };
 
     view! {
-      <table>
+      <table class=move || class.get()>
         <thead>
           <Header date=date />
         </thead>
         <tbody>
           <For
-            each=move || dates().into_iter().sorted_by_key(|(week, _)| *week)
-            key=|key| key.0.to_string()
-            children=|(_week, days)| {
-              view! { <Week days=days /> }
+            each=move || dates().into_iter().sorted_by_key(|(_week, days)| days[0])
+            key=|key| key.1.get(0).unwrap().to_string()
+            children=|(week, days)| {
+              view! { <Week week=move || week days=move || days.clone() /> }
             }
           />
         </tbody>
@@ -50,27 +68,51 @@ pub fn CalendarRoot(
 }
 
 #[component]
-fn Week(#[prop(into)] days: Vec<NaiveDate>) -> impl IntoView {
-    let start_padding = days
-        .get(0)
-        .as_ref()
-        .unwrap()
-        .weekday()
-        .num_days_from_monday();
+fn Week(
+    #[prop(into)] week: Signal<u32>,
+    #[prop(into)] days: Signal<Vec<NaiveDate>>,
+) -> impl IntoView {
+    let active_date = move || expect_context::<CalendarState>().active_date.get();
+    let start_padding = move || {
+        days.get()
+            .get(0)
+            .as_ref()
+            .unwrap()
+            .weekday()
+            .num_days_from_monday()
+    };
     let cell_classes = move || {
         let config = expect_context::<MaybeSignal<CalendarConfig>>();
         config.get().cell_classes.clone().unwrap_or_default()
     };
+    let active_classes = move || {
+        let config = expect_context::<MaybeSignal<CalendarConfig>>();
+        config.get().active_classes.clone().unwrap_or_default()
+    };
+    let cell_renderer = move || {
+        let config = expect_context::<MaybeSignal<CalendarConfig>>();
+        config
+            .get()
+            .cell_renderer
+            .clone()
+            .unwrap_or(|day| day.format("%d").to_string())
+    };
     view! {
       <tr>
-        <Show when=move || (start_padding > 0)>
-          <td colSpan={start_padding} />
+        <Show when=move || (start_padding() > 0)>
+          <td colSpan=move || start_padding() />
         </Show>
         <For
-          each=move || days.clone()
+          each=move || days.get()
           key=|day| day.to_string()
           children=move |day| {
-            view! { <td class=cell_classes.clone()>{day.format("%d").to_string()}</td> }
+            let is_active = move || day == active_date().date_naive();
+            let cell_classes = move || format!(
+              "{} {}",
+              cell_classes(),
+              if is_active() { active_classes() } else { "".to_owned() },
+            );
+            view! { <td class=cell_classes>{cell_renderer()(day)}</td> }
           }
         />
       </tr>
@@ -79,6 +121,10 @@ fn Week(#[prop(into)] days: Vec<NaiveDate>) -> impl IntoView {
 
 #[component]
 fn Header(#[prop(into)] date: MaybeSignal<DateTime<Local>>) -> impl IntoView {
+    let header_classes = move || {
+        let config = expect_context::<MaybeSignal<CalendarConfig>>();
+        config.get().header_classes.clone().unwrap_or_default()
+    };
     let month_classes = move || {
         let config = expect_context::<MaybeSignal<CalendarConfig>>();
         config.get().month_classes.clone().unwrap_or_default()
@@ -96,7 +142,7 @@ fn Header(#[prop(into)] date: MaybeSignal<DateTime<Local>>) -> impl IntoView {
           {month_year}
         </th>
       </tr>
-      <tr>
+      <tr class=header_classes>
         <For
           each=move || days.clone()
           key=|day| day.to_owned()
