@@ -1,3 +1,5 @@
+#![allow(unused_braces)]
+
 use std::collections::HashMap;
 
 use chrono::{prelude::*, Duration};
@@ -24,7 +26,7 @@ pub fn CalendarRoot(
     children: Children,
 ) -> impl IntoView {
     provide_context(config);
-    view! { {children()} }
+    children()
 }
 
 /// A calendar component that displays a month view.
@@ -59,7 +61,7 @@ pub fn Calendar(
             each=move || dates().into_iter().sorted_by_key(|(_week, days)| days[0])
             key=|key| key.1.get(0).unwrap().to_string()
             children=|(week, days)| {
-              view! { <Week week=move || week days=move || days.clone() /> }
+              view! { <Week _week=move || week days=move || days.clone() /> }
             }
           />
         </tbody>
@@ -69,7 +71,7 @@ pub fn Calendar(
 
 #[component]
 fn Week(
-    #[prop(into)] week: Signal<u32>,
+    #[prop(into)] _week: Signal<u32>,
     #[prop(into)] days: Signal<Vec<NaiveDate>>,
 ) -> impl IntoView {
     let active_date = move || expect_context::<CalendarState>().active_date.get();
