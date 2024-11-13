@@ -1,4 +1,4 @@
-use std::{cell::Cell, collections::HashMap};
+use std::collections::HashMap;
 
 use chrono::{prelude::*, Duration};
 use itertools::Itertools as _;
@@ -107,11 +107,13 @@ fn Week(
           key=|day| day.to_string()
           children=move |day| {
             let is_active = move || day == active_date().date_naive();
-            let cell_classes = move || format!(
-              "{} {}",
-              cell_classes(),
-              if is_active() { active_classes() } else { "".to_owned() },
-            );
+            let cell_classes = move || {
+              format!(
+                "{} {}",
+                cell_classes(),
+                if is_active() { active_classes() } else { "".to_owned() },
+              )
+            };
             view! { <td class=cell_classes>{cell_renderer()(day)}</td> }
           }
         />
