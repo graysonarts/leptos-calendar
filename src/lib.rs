@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use chrono::{prelude::*, Duration};
 use itertools::Itertools as _;
-use leptos::*;
+use leptos::prelude::*;
 
 #[derive(Clone, Debug, Default)]
 pub struct CalendarConfig {
@@ -17,12 +17,12 @@ pub struct CalendarConfig {
 
 #[derive(Clone, Debug, Default)]
 struct CalendarState {
-    active_date: MaybeSignal<DateTime<Local>>,
+    active_date: Signal<DateTime<Local>>,
 }
 
 #[component]
 pub fn CalendarRoot(
-    #[prop(into, optional)] config: MaybeSignal<CalendarConfig>,
+    #[prop(into, optional)] config: Signal<CalendarConfig>,
     children: Children,
 ) -> impl IntoView {
     provide_context(config);
@@ -32,7 +32,7 @@ pub fn CalendarRoot(
 /// A calendar component that displays a month view.
 #[component]
 pub fn Calendar(
-    #[prop(into)] date: MaybeSignal<DateTime<Local>>,
+    #[prop(into)] date: Signal<DateTime<Local>>,
     #[prop(into, optional)] class: MaybeProp<String>,
 ) -> impl IntoView {
     provide_context(CalendarState { active_date: date });
@@ -61,7 +61,7 @@ pub fn Calendar(
             each=move || dates().into_iter().sorted_by_key(|(_week, days)| days[0])
             key=|key| key.1.get(0).unwrap().to_string()
             children=|(week, days)| {
-              view! { <Week _week=move || week days=move || days.clone() /> }
+              view! { <Week _week=week days /> }
             }
           />
         </tbody>
@@ -84,15 +84,15 @@ fn Week(
             .num_days_from_monday()
     };
     let cell_classes = move || {
-        let config = expect_context::<MaybeSignal<CalendarConfig>>();
+        let config = expect_context::<Signal<CalendarConfig>>();
         config.get().cell_classes.clone().unwrap_or_default()
     };
     let active_classes = move || {
-        let config = expect_context::<MaybeSignal<CalendarConfig>>();
+        let config = expect_context::<Signal<CalendarConfig>>();
         config.get().active_classes.clone().unwrap_or_default()
     };
     let cell_renderer = move || {
-        let config = expect_context::<MaybeSignal<CalendarConfig>>();
+        let config = expect_context::<Signal<CalendarConfig>>();
         config
             .get()
             .cell_renderer
@@ -102,7 +102,7 @@ fn Week(
     view! {
       <tr>
         <Show when=move || (start_padding() > 0)>
-          <td colSpan=move || start_padding() />
+          <td colspan=move || start_padding() />
         </Show>
         <For
           each=move || days.get()
@@ -124,17 +124,17 @@ fn Week(
 }
 
 #[component]
-fn Header(#[prop(into)] date: MaybeSignal<DateTime<Local>>) -> impl IntoView {
+fn Header(#[prop(into)] date: Signal<DateTime<Local>>) -> impl IntoView {
     let header_classes = move || {
-        let config = expect_context::<MaybeSignal<CalendarConfig>>();
+        let config = expect_context::<Signal<CalendarConfig>>();
         config.get().header_classes.clone().unwrap_or_default()
     };
     let month_classes = move || {
-        let config = expect_context::<MaybeSignal<CalendarConfig>>();
+        let config = expect_context::<Signal<CalendarConfig>>();
         config.get().month_classes.clone().unwrap_or_default()
     };
     let cell_classes = move || {
-        let config = expect_context::<MaybeSignal<CalendarConfig>>();
+        let config = expect_context::<Signal<CalendarConfig>>();
         config.get().cell_classes.clone().unwrap_or_default()
     };
     let days = ["M", "T", "W", "T", "F", "S", "S"].map(|day| day.to_string());
@@ -142,7 +142,7 @@ fn Header(#[prop(into)] date: MaybeSignal<DateTime<Local>>) -> impl IntoView {
 
     view! {
       <tr>
-        <th colSpan=7 class=month_classes>
+        <th colspan=7 class=month_classes>
           {month_year}
         </th>
       </tr>

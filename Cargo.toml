@@ -9,4 +9,4 @@ authors = ["Grayson Hay <graysonmakesart@gmail.com>"]
 [dependencies]
 chrono = { version = "0.4.38", features = ["serde"] }
 itertools = "0.13.0"
-leptos = { version = "0.6.15", features = ["csr"] }
+leptos = { version = "0.7.0", features = ["csr"] }
